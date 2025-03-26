@@ -2,138 +2,190 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const routineTitle = document.getElementById('routineTitle');
     const routineDay = document.getElementById('routineDay');
-    const timeSlots = document.getElementById('timeSlots');
-    const activitySlots = document.getElementById('activitySlots');
-    const statusSlots = document.getElementById('statusSlots');
+    const routineTimeline = document.getElementById('routineTimeline');
     const newRoutineBtn = document.getElementById('newRoutineBtn');
     const saveRoutineBtn = document.getElementById('saveRoutineBtn');
-    const loadRoutineBtn = document.getElementById('loadRoutineBtn');
     const routineList = document.getElementById('routineList');
-    const addTimeSlotBtn = document.getElementById('addTimeSlotBtn');
-    const printRoutineBtn = document.getElementById('printRoutineBtn');
-    const clearRoutineBtn = document.getElementById('clearRoutineBtn');
+    const addBlockBtn = document.getElementById('addBlockBtn');
+    const currentTimeDisplay = document.querySelector('.current-time');
     const notification = document.getElementById('notification');
 
-    // Sample data for demonstration
+    // State
     let routines = JSON.parse(localStorage.getItem('routines')) || [];
     let currentRoutineId = null;
+    let draggedItem = null;
 
     // Initialize the app
     function init() {
         renderRoutineList();
-        addDefaultTimeSlots();
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 60000); // Update time every minute
         setupEventListeners();
+        setupDragAndDrop();
+        
+        // Create a default routine if none exists
+        if (routines.length === 0) {
+            createNewRoutine();
+        }
     }
 
     // Set up event listeners
     function setupEventListeners() {
         newRoutineBtn.addEventListener('click', createNewRoutine);
         saveRoutineBtn.addEventListener('click', saveRoutine);
-        loadRoutineBtn.addEventListener('click', () => {
-            if (routines.length === 0) {
-                showNotification('No routines saved yet');
-                return;
+        addBlockBtn.addEventListener('click', addTimeBlock);
+    }
+
+    // Set up drag and drop functionality
+    function setupDragAndDrop() {
+        routineTimeline.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('time-block')) {
+                draggedItem = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', ''); // Required for Firefox
+                e.dataTransfer.effectAllowed = 'move';
             }
-            // Just show the list, clicking on items will load them
-        });
-        addTimeSlotBtn.addEventListener('click', addTimeSlot);
-        printRoutineBtn.addEventListener('click', printRoutine);
-        clearRoutineBtn.addEventListener('click', clearRoutine);
-    }
-
-    // Add default time slots
-    function addDefaultTimeSlots() {
-        const defaultTimes = [
-            '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM',
-            '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM',
-            '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM',
-            '9:00 PM', '10:00 PM'
-        ];
-
-        defaultTimes.forEach(time => {
-            addTimeSlot(time);
-        });
-    }
-
-    // Add a new time slot
-    function addTimeSlot(time = '') {
-        // Time slot
-        const timeSlot = document.createElement('div');
-        timeSlot.className = 'time-slot';
-        timeSlot.innerHTML = `
-            <input type="time" value="${time || ''}" class="time-input">
-            <span class="delete-slot"><i class="fas fa-times"></i></span>
-        `;
-        timeSlots.appendChild(timeSlot);
-
-        // Activity slot
-        const activitySlot = document.createElement('div');
-        activitySlot.className = 'activity-slot';
-        activitySlot.innerHTML = `
-            <input type="text" placeholder="Enter activity">
-            <span class="delete-slot"><i class="fas fa-times"></i></span>
-        `;
-        activitySlots.appendChild(activitySlot);
-
-        // Status slot
-        const statusSlot = document.createElement('div');
-        statusSlot.className = 'status-slot';
-        statusSlot.innerHTML = `
-            <input type="checkbox" class="status-checkbox">
-            <span class="delete-slot"><i class="fas fa-times"></i></span>
-        `;
-        statusSlots.appendChild(statusSlot);
-
-        // Set up delete buttons
-        const deleteButtons = [timeSlot, activitySlot, statusSlot].map(el => 
-            el.querySelector('.delete-slot')
-        );
-        
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                timeSlot.remove();
-                activitySlot.remove();
-                statusSlot.remove();
-            });
         });
 
-        // Convert time input to 12-hour format if a time was provided
-        if (time) {
-            const timeInput = timeSlot.querySelector('.time-input');
-            timeInput.value = convertTo24Hour(time);
-        }
+        routineTimeline.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('time-block')) {
+                e.target.classList.remove('dragging');
+                draggedItem = null;
+            }
+        });
+
+        routineTimeline.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(routineTimeline, e.clientY);
+            const currentElement = document.querySelector('.dragging');
+            
+            if (afterElement == null) {
+                routineTimeline.appendChild(currentElement);
+            } else {
+                routineTimeline.insertBefore(currentElement, afterElement);
+            }
+        });
     }
 
-    // Convert 12-hour time to 24-hour format for input
-    function convertTo24Hour(time12) {
-        const [time, modifier] = time12.split(' ');
-        let [hours, minutes] = time.split(':');
+    // Helper function for drag and drop positioning
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.time-block:not(.dragging)')];
         
-        if (hours === '12') {
-            hours = '00';
-        }
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Update current time display
+    function updateCurrentTime() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        currentTimeDisplay.textContent = `${hours}:${minutes}`;
         
-        if (modifier === 'PM') {
-            hours = parseInt(hours, 10) + 12;
-        }
+        // Highlight current time block (simplified for demo)
+        highlightCurrentTimeBlock(now);
+    }
+
+    // Highlight the time block that should be active now
+    function highlightCurrentTimeBlock(now) {
+        const blocks = document.querySelectorAll('.time-block');
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
         
-        return `${hours}:${minutes}`;
+        blocks.forEach(block => {
+            block.classList.remove('current');
+            
+            const startTime = block.querySelector('.start-time').value;
+            const endTime = block.querySelector('.end-time').value;
+            
+            if (startTime && endTime) {
+                const [startHour, startMinute] = startTime.split(':').map(Number);
+                const [endHour, endMinute] = endTime.split(':').map(Number);
+                
+                if ((currentHour > startHour || (currentHour === startHour && currentMinute >= startMinute)) {
+                    if (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+                        block.classList.add('current');
+                        block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        });
+    }
+
+    // Create a new time block
+    function createTimeBlock(startTime = '', endTime = '', activity = '', completed = false) {
+        const block = document.createElement('div');
+        block.className = 'time-block';
+        block.draggable = true;
+        
+        block.innerHTML = `
+            <div class="time-block-header">
+                <div class="time-range">
+                    <input type="time" class="start-time" value="${startTime}">
+                    <span class="time-separator">-</span>
+                    <input type="time" class="end-time" value="${endTime}">
+                </div>
+                <div class="block-actions">
+                    <button class="block-action-btn delete-block">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="block-content">
+                <input type="text" class="activity-input" placeholder="What are you doing?" value="${activity}">
+                <label class="completion-toggle-container">
+                    <input type="checkbox" class="completion-toggle" ${completed ? 'checked' : ''}>
+                </label>
+            </div>
+        `;
+        
+        // Add event listeners for the new block
+        const deleteBtn = block.querySelector('.delete-block');
+        deleteBtn.addEventListener('click', () => {
+            block.remove();
+        });
+        
+        return block;
+    }
+
+    // Add a new time block to the timeline
+    function addTimeBlock() {
+        const now = new Date();
+        const nextHour = now.getHours() + 1;
+        const startTime = `${nextHour.toString().padStart(2, '0')}:00`;
+        const endTime = `${(nextHour + 1).toString().padStart(2, '0')}:00`;
+        
+        const newBlock = createTimeBlock(startTime, endTime);
+        routineTimeline.appendChild(newBlock);
+        
+        // Scroll to the new block
+        newBlock.scrollIntoView({ behavior: 'smooth' });
     }
 
     // Create a new routine
     function createNewRoutine() {
-        routineTitle.value = 'My Daily Routine';
-        routineDay.value = 'Everyday';
+        routineTitle.value = 'My Routine';
+        routineDay.value = 'daily';
+        routineTimeline.innerHTML = '';
         
-        // Clear all slots
-        timeSlots.innerHTML = '';
-        activitySlots.innerHTML = '';
-        statusSlots.innerHTML = '';
+        // Add some default blocks
+        const morningBlock = createTimeBlock('07:00', '08:00', 'Morning routine');
+        const workBlock = createTimeBlock('09:00', '12:00', 'Work session');
+        const lunchBlock = createTimeBlock('12:00', '13:00', 'Lunch break');
         
-        // Add default slots
-        addDefaultTimeSlots();
+        routineTimeline.appendChild(morningBlock);
+        routineTimeline.appendChild(workBlock);
+        routineTimeline.appendChild(lunchBlock);
         
-        currentRoutineId = null;
+        currentRoutineId = Date.now().toString();
         showNotification('New routine created');
     }
 
@@ -147,22 +199,22 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Get all time slots
-        const timeInputs = Array.from(document.querySelectorAll('.time-input'));
-        const activityInputs = Array.from(document.querySelectorAll('.activity-slot input'));
-        const statusCheckboxes = Array.from(document.querySelectorAll('.status-checkbox'));
-        
-        const slots = timeInputs.map((timeInput, index) => ({
-            time: formatTimeDisplay(timeInput.value),
-            activity: activityInputs[index].value,
-            completed: statusCheckboxes[index].checked
-        }));
+        // Collect all time blocks
+        const blocks = Array.from(document.querySelectorAll('.time-block'));
+        const routineData = blocks.map(block => {
+            return {
+                startTime: block.querySelector('.start-time').value,
+                endTime: block.querySelector('.end-time').value,
+                activity: block.querySelector('.activity-input').value,
+                completed: block.querySelector('.completion-toggle').checked
+            };
+        });
         
         const routine = {
             id: currentRoutineId || Date.now().toString(),
             title,
             day,
-            slots,
+            blocks: routineData,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -184,24 +236,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showNotification('Routine saved successfully');
     }
 
-    // Format time for display (24h to 12h)
-    function formatTimeDisplay(time24) {
-        if (!time24) return '';
-        
-        const [hours, minutes] = time24.split(':');
-        let period = 'AM';
-        let hours12 = parseInt(hours, 10);
-        
-        if (hours12 >= 12) {
-            period = 'PM';
-            if (hours12 > 12) hours12 -= 12;
-        }
-        
-        if (hours12 === 0) hours12 = 12;
-        
-        return `${hours12}:${minutes} ${period}`;
-    }
-
     // Load a routine
     function loadRoutine(id) {
         const routine = routines.find(r => r.id === id);
@@ -210,25 +244,23 @@ document.addEventListener('DOMContentLoaded', function() {
         currentRoutineId = routine.id;
         routineTitle.value = routine.title;
         routineDay.value = routine.day;
+        routineTimeline.innerHTML = '';
         
-        // Clear all slots
-        timeSlots.innerHTML = '';
-        activitySlots.innerHTML = '';
-        statusSlots.innerHTML = '';
+        // Add all blocks from the routine
+        routine.blocks.forEach(blockData => {
+            const block = createTimeBlock(
+                blockData.startTime,
+                blockData.endTime,
+                blockData.activity,
+                blockData.completed
+            );
+            routineTimeline.appendChild(block);
+        });
         
-        // Add slots from the routine
-        routine.slots.forEach(slot => {
-            addTimeSlot(slot.time);
-            
-            // Set activity and status for the last added slot
-            const activityInputs = document.querySelectorAll('.activity-slot input');
-            const statusCheckboxes = document.querySelectorAll('.status-checkbox');
-            
-            if (activityInputs.length > 0) {
-                const lastIndex = activityInputs.length - 1;
-                activityInputs[lastIndex].value = slot.activity;
-                statusCheckboxes[lastIndex].checked = slot.completed;
-            }
+        // Update active state in the list
+        const listItems = document.querySelectorAll('#routineList li');
+        listItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.id === id);
         });
         
         showNotification('Routine loaded');
@@ -239,32 +271,26 @@ document.addEventListener('DOMContentLoaded', function() {
         routineList.innerHTML = '';
         
         if (routines.length === 0) {
-            routineList.innerHTML = '<li>No routines saved yet</li>';
+            routineList.innerHTML = '<li class="empty">No routines saved yet</li>';
             return;
         }
         
+        // Sort by most recently updated
         routines.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         
         routines.forEach(routine => {
             const li = document.createElement('li');
             li.textContent = routine.title;
-            li.title = `Day: ${routine.day}\nCreated: ${new Date(routine.createdAt).toLocaleDateString()}`;
+            li.dataset.id = routine.id;
+            li.innerHTML = `
+                <i class="fas fa-calendar-day"></i>
+                ${routine.title}
+                <span class="routine-day">${routine.day}</span>
+            `;
+            
             li.addEventListener('click', () => loadRoutine(routine.id));
             routineList.appendChild(li);
         });
-    }
-
-    // Print the current routine
-    function printRoutine() {
-        // You could implement a print-specific styling here
-        window.print();
-    }
-
-    // Clear the current routine
-    function clearRoutine() {
-        if (confirm('Are you sure you want to clear this routine?')) {
-            createNewRoutine();
-        }
     }
 
     // Show notification
@@ -274,11 +300,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set color based on type
         if (type === 'error') {
-            notification.style.backgroundColor = var(--danger-color);
+            notification.style.backgroundColor = 'var(--danger)';
         } else if (type === 'warning') {
-            notification.style.backgroundColor = var(--warning-color);
+            notification.style.backgroundColor = 'var(--warning)';
         } else {
-            notification.style.backgroundColor = var(--success-color);
+            notification.style.backgroundColor = 'var(--primary)';
         }
         
         notification.classList.add('show');
