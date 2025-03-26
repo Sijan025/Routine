@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routine Planner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Routine Planner</h1>
+    </header>
+    <main>
+        <table id="routine-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Activity</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td contenteditable="true">5:30-7</td>
+                    <td contenteditable="true">Physics</td>
+                    <td><button class="delete-row">Delete</button></td>
+                </tr>
+                <tr>
+                    <td contenteditable="true">7-8:10</td>
+                    <td contenteditable="true">Maths</td>
+                    <td><button class="delete-row">Delete</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button id="add-row">Add Row</button>
+        <button id="save-routine">Save Routine</button>
+    </main>
+    <footer>
+        <p>Routine Planner &copy; 2025</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
