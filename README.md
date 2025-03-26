@@ -1,84 +1,82 @@
-Routine Planner Web Application
-A simple and interactive web-based routine planner that allows users to create, edit, and save their daily routines. The application features a dynamic table that mimics a timetable format, with editable cells, and supports adding, deleting, and saving rows.
-
-Features
-Editable Timetable: Users can edit time and activities directly in the table.
-
-Add/Delete Rows: Dynamic buttons let users add or remove rows easily.
-
-Save Routine Locally: Save routines in the browser’s local storage for later use.
-
-Load Routine on Refresh: Automatically loads the saved routine when the page is revisited.
-
-Responsive Design: The layout is mobile-friendly and optimized for different screen sizes.
-
-Styled UI: Professional and attractive UI using CSS.
-
-Technologies Used
-HTML – Structure of the web page.
-
-CSS – Styling to enhance the UI.
-
-JavaScript – Interactivity and dynamic functionality.
-
-Local Storage API – To save and retrieve the user’s routine.
-
-Setup Instructions
-Clone the repository (or download the code manually):
-
-bash
-Copy
-Edit
-git clone <repository-url>  
-Open the project folder and ensure the following files exist:
-
-index.html
-
-styles.css
-
-script.js
-
-Open index.html in your browser:
-
-You can either double-click the index.html file or open it using any live server.
-
-Your routine planner will be ready to use!
-
-Usage Instructions
-Editing the Routine:
-
-Click on any cell in the table to edit the time or activity.
-
-Adding a Row:
-
-Click on the “Add Row” button to add a new time slot to your routine.
-
-Deleting a Row:
-
-Click the “Delete” button in the Action column to remove a specific row.
-
-Saving the Routine:
-
-Click the “Save Routine” button to store your routine in the browser’s local storage.
-
-Your routine will be loaded automatically next time you visit the page.
-
-Example Routine Screenshot
-(Include a screenshot of the planner here if possible to illustrate its usage.)
-
-Future Enhancements
-Export routine to Excel or PDF.
-
-Allow multiple users to save separate routines.
-
-Add color-coding for different activities.
-
-Implement drag-and-drop functionality for rearranging rows.
-
-Contributing
-Contributions are welcome! If you have ideas to improve the project, please fork the repository and create a pull request.
-
-License
-This project is licensed under the MIT License.
-
-Enjoy planning and staying organized with Routine Planner Web App! 🎯
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Routine Planner</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-clock"></i>
+                <h1>RoutineFlow</h1>
+            </div>
+            
+            <div class="routine-actions">
+                <button id="newRoutineBtn" class="btn primary">
+                    <i class="fas fa-plus"></i> New Routine
+                </button>
+                <button id="saveRoutineBtn" class="btn secondary">
+                    <i class="fas fa-save"></i> Save Routine
+                </button>
+            </div>
+            
+            <div class="routine-list-container">
+                <h3>My Routines</h3>
+                <ul id="routineList" class="routine-list"></ul>
+            </div>
+            
+            <div class="user-profile">
+                <div class="avatar">U</div>
+                <div class="user-info">
+                    <span class="username">User</span>
+                    <span class="user-email">user@example.com</span>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="routine-header">
+                <input type="text" id="routineTitle" placeholder="Untitled Routine" class="routine-title">
+                <div class="routine-meta">
+                    <select id="routineDay" class="day-selector">
+                        <option value="daily">Daily</option>
+                        <option value="weekday">Weekday</option>
+                        <option value="weekend">Weekend</option>
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                        <option value="sunday">Sunday</option>
+                    </select>
+                    <button id="routineSettingsBtn" class="icon-btn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="time-indicator">
+                <div class="current-time"></div>
+            </div>
+            
+            <div class="routine-timeline" id="routineTimeline">
+                <!-- Timeline segments will be added here by JavaScript -->
+            </div>
+            
+            <button id="addBlockBtn" class="floating-btn">
+                <i class="fas fa-plus"></i>
+            </button>
+        </main>
+        
+        <div class="notification" id="notification"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
